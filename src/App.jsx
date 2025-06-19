@@ -1,8 +1,8 @@
 import { languages } from "./languages"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {clsx} from "clsx"
 import { getFarewellText } from "./util"
-import { randomWord } from "./util"
+import getRandomWord from "./words.js"
 import Confetti from "react-confetti"
 
 
@@ -10,11 +10,32 @@ import Confetti from "react-confetti"
 
 export default function App() {
 
-  const [currentWord, setCurrentWord] = useState(() => randomWord())
+
+  const [currentWord, setCurrentWord] = useState("")
   const [userGuessed, setUserGuessed] = useState([])
 
-  const lastLetter = userGuessed[userGuessed.length-1]
-  const wrongGuess = lastLetter && !currentWord.split("").includes(lastLetter)
+  useEffect(() => {
+    getRandomWord().then(setCurrentWord)
+  }, [])
+
+   if (!currentWord) {
+    return (
+      <main className="main">
+        <div className="spinner" role="status" aria-label="Loading..."></div>
+      </main>
+    );
+  }
+
+  const lastLetter = userGuessed.at(-1) || ""
+  const wordLetters = currentWord.split("")
+  const wrongGuess = lastLetter && !wordLetters.includes(lastLetter)
+
+  function startNewGame() {
+    getRandomWord().then(setCurrentWord)
+    setUserGuessed([])
+  }
+  console.log(currentWord)
+
 
   function handleClick(letter) {
     setUserGuessed(prev => 
@@ -24,14 +45,10 @@ export default function App() {
     )
   }
 
-  function startNewGame() {
-    setCurrentWord(randomWord())
-    setUserGuessed([])
-  }
 
   const numGuessesLeft = languages.length - 1
   const wrongGuessCount = userGuessed.filter(letter => !currentWord.includes(letter)).length
-  const isGameWon = currentWord.split("").every(letter => userGuessed.includes(letter))
+  const isGameWon = currentWord && wordLetters.every(letter => userGuessed.includes(letter))
   const isGameLost = wrongGuessCount >= numGuessesLeft
   const isGameOver = isGameWon || isGameLost
 
@@ -56,7 +73,7 @@ export default function App() {
     )
   })
 
-  const letters = currentWord.split("").map((letter, index) => {
+  const letters = wordLetters.map((letter, index) => {
     const shouldRevealLetter = isGameLost || userGuessed.includes(letter)
     const letterClassName = clsx(
       isGameLost && !userGuessed.includes(letter) && "missed-letter"
@@ -82,7 +99,7 @@ export default function App() {
     return (
       <button 
         className = {classname}
-        disabled = {isGameOver}
+        disabled = {!currentWord || isGameOver}
         aria-disabled = {userGuessed.includes(letter)}
         aria-label = {`Letter ${letter}`}
         onClick={() => handleClick(letter)} 
@@ -123,6 +140,8 @@ export default function App() {
     return null
   }
 
+
+ 
   return (
     <main className="main">
       {isGameWon && <Confetti recycle={false} numberOfPieces={1000} />}
@@ -159,7 +178,7 @@ export default function App() {
           <p>{`You have ${numGuessesLeft} attempts left.`}</p>
 
           <p>
-            Current word: {currentWord.split("").map(letter => {
+            Current word: {wordLetters.map(letter => {
               return userGuessed.includes(letter) ? letter : "blank"
             }).join(" ")}
         </p>
