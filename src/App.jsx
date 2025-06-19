@@ -34,7 +34,7 @@ export default function App() {
     getRandomWord().then(setCurrentWord)
     setUserGuessed([])
   }
-  console.log(currentWord)
+
 
 
   function handleClick(letter) {
